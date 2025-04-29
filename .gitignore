@@ -1,3 +1,4 @@
 arxius
-dames
-
+*.out
+*.test.cpp
+*.code-workspace

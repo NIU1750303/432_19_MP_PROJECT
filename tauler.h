@@ -15,11 +15,12 @@ public:
     void actualitzaMovimentsValids();
     bool mouFitxa(const Posicio& origen, const Posicio& desti);
     void getPosicionsPossibles(const Posicio& origen, int& nPosicions, Posicio posicionsPossibles[]) const;
-    std::string toString() const;
     
+    std::string toString() const;
+       
+
 private:
     Fitxa m_tauler[N_FILES][N_COLUMNES];
-
-    bool dinsDelTauler(int fila, int col) const;
+    bool dinsDelTauler(const int& fila, const int& col) const;
     void netejaMovimentsValids();
 };

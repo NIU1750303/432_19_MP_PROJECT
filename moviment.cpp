@@ -1,40 +1,49 @@
 #include "moviment.h"
-using namespace std;
+#include "posicio.h"
 
-Moviment::Moviment() {}
+Moviment::Moviment() : m_nPassos(0), m_nCaptures(0) {}
+Moviment::Moviment(const Posicio& origen, const Posicio& desti) : m_nCaptures(0), m_nPassos(0)
+{
+    afegeixPas(origen);
+    afegeixPas(desti);
+}
 
-Moviment::Moviment(const Posicio& origen) { m_ruta.push_back(origen); }
+void Moviment::afegeixPas(const Posicio& p)
+{
+    m_passos[m_nPassos++] = p;
+}
 
-void Moviment::afegeixPas(const Posicio& novaPosicio) { m_ruta.push_back(novaPosicio); }
+void Moviment::afegeixCaptura(const Posicio& p)
+{
+    m_captures[m_nCaptures++] = p;
+}
 
-void Moviment::afegeixCaptura(const Posicio& posCapturada) { m_captures.push_back(posCapturada);}
+int Moviment::getNumPassos() const { return m_nPassos; }
+int Moviment::getNumCaptures() const { return m_nCaptures; }
+void Moviment::getRuta(Posicio passos[], int& n) const
+{
+    n = m_nPassos;
+    for (int i = 0; i < m_nPassos; ++i) 
+        passos[i] = m_passos[i];
+}
+void Moviment::getCaptures(Posicio captures[], int& n) const
+{
+    n = m_nCaptures;
+    for (int i = 0; i < m_nCaptures; ++i) {
+        captures[i] = m_captures[i];
+    }
+}
 
-Posicio Moviment::getOrigen() const 
-{ 
-    if (!m_ruta.empty())
-        return m_ruta[0];
-    return Posicio();
+Posicio Moviment::getOrigen() const
+{
+    if (m_nPassos > 0)
+        return m_passos[0];
+    return Posicio(); 
 }
 
 Posicio Moviment::getDesti() const 
 {
-    if (!m_ruta.empty())
-        return m_ruta.back();
+    if (m_nPassos > 0)
+        return m_passos[m_nPassos - 1];
     return Posicio();
-}
-
-vector<Posicio> Moviment::getRuta() const { return m_ruta; }
-
-vector<Posicio> Moviment::getCaptures() const { return m_captures; }
-
-string Moviment::toString() const 
-{ 
-    string resultat;
-    for (size_t i = 0; i < m_ruta.size(); ++i) 
-    {
-        resultat += m_ruta[i].toString();
-        if (i < m_ruta.size() - 1)
-            resultat += " -> ";
-    }
-    return resultat;
 }

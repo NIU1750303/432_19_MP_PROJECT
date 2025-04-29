@@ -19,3 +19,5 @@ class Posicio {
         int m_fila;
         int m_columna;
 };
+
+std::ostream& operator<<(std::ostream& os, const Posicio& p);
