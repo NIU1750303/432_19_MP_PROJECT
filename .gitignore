@@ -2,3 +2,5 @@ arxius
 *.out
 *.test.cpp
 *.code-workspace
+tests
+test

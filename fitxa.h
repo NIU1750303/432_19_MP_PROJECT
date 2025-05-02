@@ -1,3 +1,4 @@
+//fitxa.h
 #pragma once
 #include "moviment.h"
 #include "posicio.h"

@@ -1,10 +1,5 @@
-#include "tauler.h"
-#include "fitxa.h"
-#include "iostream"
-#include "moviment.h"
-#include "posicio.h"
+#include "tauler.hpp"
 #include <fstream>
-#include <ostream>
 #include <string>
 using namespace std;
 
@@ -55,15 +50,17 @@ void Tauler::inicialitza(const string& nomFitxer)
 
     }
 }
+
 void Tauler::actualitzaMovimentsValids() 
 {
     for (int i = 0 ; i < N_FILES; i++) {
         for (int j = 0; j < N_COLUMNES; j++) {
             Fitxa& f = m_tauler[i][j];
+
             if (f.esBuida()) continue;
 
             f.esborraMoviments();
-
+            
             ColorFitxa color = f.getColor();
             TipusFitxa tipus = f.getTipus();
 
@@ -76,57 +73,53 @@ void Tauler::actualitzaMovimentsValids()
                     int nf = i + df[k];
                     int nc = j + dc[k];
 
-                    // Moviment simple
                     if (dinsDelTauler(nf, nc) && m_tauler[nf][nc].esBuida()) {
-                        f.afegeixMovimentValid(Moviment(Posicio(i, j), Posicio(nf, nc)));
+                        Posicio p1(i, j), p2(nf, nc);
+                        Moviment m(p1, p2);
+                        f.afegeixMovimentValid(m);
                     }
+                }
 
-                    // Captura
-                    int midf = i + df[k];
-                    int midc = j + dc[k];
-                    int capf = i + 2 * df[k];
-                    int capc = j + 2 * dc[k];
+                for (int k = 0; k < 2; k++) {
+                    int nf = i + 2 * df[k];
+                    int nc = j + 2 * dc[k];
+                    int mf = i + df[k];
+                    int mc = j + dc[k];
 
-                    if (dinsDelTauler(capf, capc)) {
-                        Fitxa& inter = m_tauler[midf][midc];
-                        if (!inter.esBuida() && inter.getColor() != color && m_tauler[capf][capc].esBuida()) {
-                            Moviment m(Posicio(i, j), Posicio(capf, capc));
-                            m.afegeixCaptura(Posicio(midf, midc));
+                    if (dinsDelTauler(nf, nc) && m_tauler[nf][nc].esBuida() && !m_tauler[mf][mc].esBuida()) {
+                        if (m_tauler[mf][mc].getColor() != color) {
+                            Posicio p1(i, j), p2(nf, nc);
+                            Moviment m(p1, p2);
+                            m.afegeixCaptura(Posicio(mf, mc));
                             f.afegeixMovimentValid(m);
                         }
                     }
                 }
             }
-
             else if (tipus == TIPUS_DAMA) {
-                int df[4] = { -1, -1, 1, 1 };
-                int dc[4] = { -1, 1, -1, 1 };
+                int df[4] = {1, 1, -1, -1};
+                int dc[4] = {1, -1, 1, -1};
 
-                for (int d = 0; d < 4; ++d) {
-                    int nf = i + df[d];
-                    int nc = j + dc[d];
-
-                    // Moviments lliures
+                for (int k = 0; k < 4; ++k) {
+                    int nf = i + df[k];
+                    int nc = j + dc[k];
                     while (dinsDelTauler(nf, nc) && m_tauler[nf][nc].esBuida()) {
-                        f.afegeixMovimentValid(Moviment(Posicio(i, j), Posicio(nf, nc)));
-                        nf += df[d];
-                        nc += dc[d];
+                        Posicio p1(i, j), p2(nf, nc);
+                        Moviment m(p1, p2);
+                        f.afegeixMovimentValid(m);
+                        nf += df[k];
+                        nc += dc[k];
                     }
 
-                    // Captura simple
-                    int midf = nf;
-                    int midc = nc;
-                    nf += df[d];
-                    nc += dc[d];
-
-                    if (dinsDelTauler(nf, nc) && 
-                        !m_tauler[midf][midc].esBuida() &&
-                        m_tauler[midf][midc].getColor() != color &&
-                        m_tauler[nf][nc].esBuida()) {
-
-                        Moviment m(Posicio(i, j), Posicio(nf, nc));
-                        m.afegeixCaptura(Posicio(midf, midc));
-                        f.afegeixMovimentValid(m);
+                    if (dinsDelTauler(nf, nc) && !m_tauler[nf][nc].esBuida() && m_tauler[nf][nc].getColor() != color) {
+                        int nf2 = nf + df[k];
+                        int nc2 = nc + dc[k];
+                        if (dinsDelTauler(nf2, nc2) && m_tauler[nf2][nc2].esBuida()) {
+                            Posicio p1(i, j), p2(nf2, nc2);
+                            Moviment m(p1, p2);
+                            m.afegeixCaptura(Posicio(nf, nc));
+                            f.afegeixMovimentValid(m);
+                        }
                     }
                 }
             }
@@ -134,44 +127,33 @@ void Tauler::actualitzaMovimentsValids()
     }
 }
 
-bool Tauler::mouFitxa(const Posicio& origen, const Posicio& desti) 
-{ 
-    return true;
-}
+
 void Tauler::getPosicionsPossibles(const Posicio& origen, int& nPosicions, Posicio posicionsPossibles[]) const 
 {
-    int fila = origen.getFila();
-    int col = origen.getColumna();
-
-    if (!dinsDelTauler(fila, col)) {
-        nPosicions = 0;
-        return;
-    }
-
-    const Fitxa& f = m_tauler[fila][col];
-
-    if (f.esBuida()) {
-        nPosicions = 0;
-        return;
-    }
-
-    // Obtenim tots els moviments vàlids
-    Moviment movs[MAX_MOVIMENTS];
-    int nMovs;
-    f.getMoviments(movs, nMovs);
-
     nPosicions = 0;
+    int fila = origen.getFila();
+    int columna = origen.getColumna();
+    const Fitxa& f = m_tauler[fila][columna];
+
+    if (f.esBuida())
+        return;
+
+    Moviment moviments[20];
+    int nMovs = 0;
+    f.getMoviments(moviments, nMovs);
+
     for (int i = 0; i < nMovs; ++i) {
-        posicionsPossibles[nPosicions++] = movs[i].getDesti();
+        posicionsPossibles[nPosicions++] = moviments[i].getDesti();
     }
 }
+
 
 string Tauler::toString() const 
 {
     string result = "";
     for (int i = 7; i >= 0; i--) 
     {
-        result += string(1, '0' + i + 1) + ":";
+        result += string(1, '0' + i + 1) + ": ";
         for (int j = 0; j < N_COLUMNES; j++)
         {
             Fitxa f = m_tauler[i][j];
@@ -198,11 +180,119 @@ string Tauler::toString() const
         }   
         result += "\n";
     }
-    result += "  A B C D E F G H";
+    result += "  a b c d e f g h";
     return result;
 }
 
 bool Tauler::dinsDelTauler(const int& fila, const int& columna) const
 {
     return fila >= 0 && fila < N_FILES && columna >= 0 && columna < N_COLUMNES;
+}
+
+bool Tauler::hiHaCapturesDisponibles(ColorFitxa color) const {
+    for (int i = 0; i < N_FILES; ++i) {
+        for (int j = 0; j < N_COLUMNES; ++j) {
+            const Fitxa& f = m_tauler[i][j];
+            if (f.esBuida() || f.getColor() != color) continue;
+            TipusFitxa tipus = f.getTipus();
+            if (tipus == TIPUS_NORMAL) {
+                int dir = (color == COLOR_BLANC ? 1 : -1);
+                for (int dc = -1; dc <= 1; dc += 2) {
+                    int mi = i + dir, mj = j + dc;
+                    int ei = i + 2*dir, ej = j + 2*dc;
+                    if (dinsDelTauler(mi,mj) && dinsDelTauler(ei,ej)) {
+                        const Fitxa& medio = m_tauler[mi][mj];
+                        if (!medio.esBuida() && medio.getColor() != color
+                            && m_tauler[ei][ej].esBuida()) {
+                            return true;
+                        }
+                    }
+                }
+            } else { // dama
+                static const int dfn[4] = {1,1,-1,-1};
+                static const int dcn[4] = {1,-1,1,-1};
+                for (int d = 0; d < 4; ++d) {
+                    int ni = i + dfn[d], nj = j + dcn[d];
+                    while (dinsDelTauler(ni,nj) && m_tauler[ni][nj].esBuida()) {
+                        ni += dfn[d]; nj += dcn[d];
+                    }
+                    if (dinsDelTauler(ni,nj)) {
+                        const Fitxa& bloque = m_tauler[ni][nj];
+                        if (!bloque.esBuida() && bloque.getColor() != color) {
+                            int ei = ni + dfn[d], ej = nj + dcn[d];
+                            if (dinsDelTauler(ei,ej) && m_tauler[ei][ej].esBuida()) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+void Tauler::bufaFitxa(const Posicio& origen) {
+    m_tauler[origen.getFila()][origen.getColumna()] = Fitxa();
+}
+
+bool Tauler::mouFitxa(const Posicio& origen, const Posicio& desti) {
+    // 1) validar destino
+    Posicio dests[MAX_MOVIMENTS];
+    int nPos = 0;
+    getPosicionsPossibles(origen, nPos, dests);
+    bool valido = false;
+    for (int i = 0; i < nPos; ++i)
+        if (dests[i] == desti) { valido = true; break; }
+    if (!valido) return false;
+
+    // 2) actualizo movimientos y busco máxima captura
+    actualitzaMovimentsValids();
+    Fitxa& f = m_tauler[origen.getFila()][origen.getColumna()];
+    Moviment movs[MAX_MOVIMENTS];
+    int nm = 0;
+    f.getMoviments(movs, nm);
+
+    int maxCap = 0;
+    for (int i = 0; i < nm; ++i) {
+        int c = movs[i].getNumCaptures();
+        if (c > maxCap) maxCap = c;
+    }
+
+    // 3) elijo el movimiento concreto
+    Moviment* sel = nullptr;
+    for (int i = 0; i < nm; ++i) {
+        if (movs[i].getDesti() == desti 
+            && movs[i].getNumCaptures() == maxCap) {
+            sel = &movs[i];
+            break;
+        }
+    }
+
+    // 4) aplico capturas
+    Posicio caps[MAX_CAPTURES];
+    int nc = 0;
+    sel->getCaptures(caps, nc);
+    for (int k = 0; k < nc; ++k) {
+        const Posicio& p = caps[k];
+        m_tauler[p.getFila()][p.getColumna()] = Fitxa();
+    }
+
+    // 5) muevo y promuevo si toca
+    Fitxa temp = f;
+    m_tauler[origen.getFila()][origen.getColumna()] = Fitxa();
+    m_tauler[desti.getFila()][desti.getColumna()] = temp;
+    if (temp.getTipus() == TIPUS_NORMAL) {
+        if ((temp.getColor() == COLOR_BLANC && desti.getFila() == N_FILES-1) ||
+            (temp.getColor() == COLOR_NEGRE && desti.getFila() == 0)) {
+            m_tauler[desti.getFila()][desti.getColumna()].promouADama();
+        }
+    }
+
+    // 6) si había captura obligatoria y no capturó, "bufar"
+    if (maxCap == 0 && hiHaCapturesDisponibles(temp.getColor())) {
+        bufaFitxa(origen);
+    }
+
+    return true;
 }

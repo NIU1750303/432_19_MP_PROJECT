@@ -1,4 +1,4 @@
-#include "tauler.h"
+#include "tauler.hpp"
 #include "fitxa.h"
 #include "moviment.h"
 #include "posicio.h"
